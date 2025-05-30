@@ -13,3 +13,96 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// Main cable product model
+model Cable {
+  id                String   @id @default(cuid())
+  name              String
+  model             String   @unique
+  description       String?
+  
+  // Basic electrical properties
+  voltage           String   // e.g., "230V", "400V", "1kV-35kV"
+  current           Float?   // Amperage rating
+  conductorMaterial ConductorMaterial
+  insulationMaterial String
+  
+  // Physical properties
+  coreCount         Int      // Number of cores/conductors
+  crossSection      Float    // Cross-sectional area in mm²
+  outerDiameter     Float?   // Overall diameter in mm
+  weight            Float?   // Weight per meter in kg/m
+  
+  // Construction details
+  construction      String?  // e.g., "Stranded", "Solid"
+  shielding         String?  // e.g., "Unshielded", "Braided", "Foil"
+  jacket            String?  // Outer jacket material
+  
+  // Standards and certifications
+  standards         String[] // Array of standards like ["IEC 60502", "BS 5467"]
+  certifications    String[] // CE, UL, etc.
+  
+  // Operational specifications
+  tempRating        String?  // Temperature rating
+  bendRadius        Float?   // Minimum bend radius
+  fireRating        String?  // Fire performance rating
+  
+  // Application and usage
+  applications      String[] // Where this cable is typically used
+  availableLengths  String[] // Available lengths/packaging
+  
+  // Design parameters as JSON (for flexible tabular data)
+  designParameters  Json?    // Store specification tables, variants, etc.
+  
+  // Images - only two S3 URLs
+  primaryImageUrl   String?  // S3 URL for primary cable image
+  secondaryImageUrl String?  // S3 URL for secondary cable image
+  
+  // Categorization
+  categoryId        String
+  category          Category @relation(fields: [categoryId], references: [id])
+  
+  // Status and display
+  active            Boolean  @default(true)
+  featured          Boolean  @default(false)
+  sortOrder         Int      @default(0)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("cables")
+}
+
+// Cable categories (hierarchical)
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  
+  // Hierarchy support
+  parentId    String?
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  
+  // Associated cables
+  cables      Cable[]
+  
+  // Display settings
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  
+  @@map("categories")
+}
+
+// Enums
+enum ConductorMaterial {
+  COPPER
+  ALUMINUM
+  COPPER_CLAD_ALUMINUM
+  SILVER
+  TINNED_COPPER
+}
