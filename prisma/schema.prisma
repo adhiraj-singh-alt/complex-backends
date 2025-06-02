@@ -15,94 +15,247 @@ datasource db {
 }
 
 // Main cable product model
+model CableCategory {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique @db.VarChar(100)
+  description  String?  @db.Text
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  cables Cable[]
+
+  @@map("cable_categories")
+}
+// Example data: Power Cables, Control Cables, Instrumentation Cables, etc.
+
+
+model Standard {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  fullName    String?  @map("full_name") @db.VarChar(200)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  cableStandards CableStandard[]
+
+  @@map("standards")
+}
+// Example data: IS 1554, IS 7098, IEC 60502, etc.
+
+model Industry {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  cableIndustries CableIndustry[]
+
+  @@map("industries")
+}
+// Example data: Power Generation, Oil & Gas, Manufacturing, Infrastructure, etc.
+
+
 model Cable {
-  id                String   @id @default(cuid())
-  name              String
-  model             String   @unique
-  description       String?
+  id                     Int      @id @default(autoincrement())
+  name                   String   @db.VarChar(200)
+  modelNumber            String?  @unique @map("model_number") @db.VarChar(100)
+  categoryId             Int      @map("category_id")
+  description            String?  @db.Text
+  shortDescription       String?  @map("short_description") @db.VarChar(500)
   
-  // Basic electrical properties
-  voltage           String   // e.g., "230V", "400V", "1kV-35kV"
-  current           Float?   // Amperage rating
-  conductorMaterial ConductorMaterial
-  insulationMaterial String
+  // Core specifications
+  voltageRating          String?  @map("voltage_rating") @db.VarChar(50)
+  conductorMaterial      String?  @map("conductor_material") @db.VarChar(50)
+  conductorSize          String?  @map("conductor_size") @db.VarChar(50)
+  insulationMaterial     String?  @map("insulation_material") @db.VarChar(100)
+  sheathMaterial         String?  @map("sheath_material") @db.VarChar(100)
   
   // Physical properties
-  coreCount         Int      // Number of cores/conductors
-  crossSection      Float    // Cross-sectional area in mm²
-  outerDiameter     Float?   // Overall diameter in mm
-  weight            Float?   // Weight per meter in kg/m
+  overallDiameterMm      Decimal? @map("overall_diameter_mm") @db.Decimal(8, 2)
+  weightPerKmKg          Decimal? @map("weight_per_km_kg") @db.Decimal(10, 2)
+  minBendingRadiusMm     Int?     @map("min_bending_radius_mm")
+  
+  // Operating conditions
+  operatingTempMin       Int?     @map("operating_temp_min")
+  operatingTempMax       Int?     @map("operating_temp_max")
+  installationTempMin    Int?     @map("installation_temp_min")
+  installationTempMax    Int?     @map("installation_temp_max")
   
   // Construction details
-  construction      String?  // e.g., "Stranded", "Solid"
-  shielding         String?  // e.g., "Unshielded", "Braided", "Foil"
-  jacket            String?  // Outer jacket material
+  numberOfCores          Int?     @map("number_of_cores")
+  coreArrangement        String?  @map("core_arrangement") @db.VarChar(50)
+  armoringType           String?  @map("armoring_type") @db.VarChar(100)
+  isFlameRetardant       Boolean  @default(false) @map("is_flame_retardant")
+  isFireResistant        Boolean  @default(false) @map("is_fire_resistant")
   
-  // Standards and certifications
-  standards         String[] // Array of standards like ["IEC 60502", "BS 5467"]
-  certifications    String[] // CE, UL, etc.
+  // Images
+  productImageUrl        String?  @map("product_image_url") @db.VarChar(500)
+  crossSectionImageUrl   String?  @map("cross_section_image_url") @db.VarChar(500)
   
-  // Operational specifications
-  tempRating        String?  // Temperature rating
-  bendRadius        Float?   // Minimum bend radius
-  fireRating        String?  // Fire performance rating
+  // SEO and display
+  slug                   String?  @unique @db.VarChar(200)
+  metaTitle              String?  @map("meta_title") @db.VarChar(200)
+  metaDescription        String?  @map("meta_description") @db.VarChar(300)
+  isFeatured             Boolean  @default(false) @map("is_featured")
+  displayOrder           Int      @default(0) @map("display_order")
+  isActive               Boolean  @default(true) @map("is_active")
   
-  // Application and usage
-  applications      String[] // Where this cable is typically used
-  availableLengths  String[] // Available lengths/packaging
-  
-  // Design parameters as JSON (for flexible tabular data)
-  designParameters  Json?    // Store specification tables, variants, etc.
-  
-  // Images - only two S3 URLs
-  primaryImageUrl   String?  // S3 URL for primary cable image
-  secondaryImageUrl String?  // S3 URL for secondary cable image
-  
-  // Categorization
-  categoryId        String
-  category          Category @relation(fields: [categoryId], references: [id])
-  
-  // Status and display
-  active            Boolean  @default(true)
-  featured          Boolean  @default(false)
-  sortOrder         Int      @default(0)
-  
-  // Timestamps
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  category               CableCategory     @relation(fields: [categoryId], references: [id])
+  cableStandards         CableStandard[]
+  cableIndustries        CableIndustry[]
+  cableApplications      CableApplication[]
+  cableSpecifications    CableSpecification[]
+  quoteRequests          QuoteRequest[]
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([slug])
   @@map("cables")
 }
 
-// Cable categories (hierarchical)
-model Category {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  
-  // Hierarchy support
-  parentId    String?
-  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryHierarchy")
-  
-  // Associated cables
-  cables      Cable[]
-  
-  // Display settings
-  active      Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
-  
-  @@map("categories")
+model CableStandard {
+  id         Int      @id @default(autoincrement())
+  cableId    Int      @map("cable_id")
+  standardId Int      @map("standard_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  cable    Cable    @relation(fields: [cableId], references: [id], onDelete: Cascade)
+  standard Standard @relation(fields: [standardId], references: [id])
+
+  @@unique([cableId, standardId])
+  @@index([cableId])
+  @@index([standardId])
+  @@map("cable_standards")
 }
 
-// Enums
-enum ConductorMaterial {
-  COPPER
-  ALUMINUM
-  COPPER_CLAD_ALUMINUM
-  SILVER
-  TINNED_COPPER
+model CableIndustry {
+  id         Int      @id @default(autoincrement())
+  cableId    Int      @map("cable_id")
+  industryId Int      @map("industry_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  cable    Cable    @relation(fields: [cableId], references: [id], onDelete: Cascade)
+  industry Industry @relation(fields: [industryId], references: [id])
+
+  @@unique([cableId, industryId])
+  @@index([cableId])
+  @@index([industryId])
+  @@map("cable_industries")
+}
+
+model CableApplication {
+  id              Int      @id @default(autoincrement())
+  cableId         Int      @map("cable_id")
+  applicationName String   @map("application_name") @db.VarChar(200)
+  description     String?  @db.Text
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  cable Cable @relation(fields: [cableId], references: [id], onDelete: Cascade)
+
+  @@index([cableId])
+  @@map("cable_applications")
+}
+
+model SpecificationType {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique @db.VarChar(100)
+  dataType String  @default("text") @map("data_type") @db.VarChar(20)
+  unit     String? @db.VarChar(20)
+  category String? @db.VarChar(50)
+  isActive Boolean @default(true) @map("is_active")
+
+  // Relations
+  cableSpecifications CableSpecification[]
+
+  @@map("specification_types")
+}
+
+model CableSpecification {
+  id                  Int      @id @default(autoincrement())
+  cableId             Int      @map("cable_id")
+  specificationTypeId Int      @map("specification_type_id")
+  value               String   @db.Text
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  // Relations
+  cable             Cable             @relation(fields: [cableId], references: [id], onDelete: Cascade)
+  specificationType SpecificationType @relation(fields: [specificationTypeId], references: [id])
+
+  @@unique([cableId, specificationTypeId])
+  @@index([cableId])
+  @@index([specificationTypeId])
+  @@map("cable_specifications")
+}
+
+model QuoteRequest {
+  id                     Int       @id @default(autoincrement())
+  cableId                Int       @map("cable_id")
+  
+  // Customer information
+  customerName           String    @map("customer_name") @db.VarChar(200)
+  customerEmail          String    @map("customer_email") @db.VarChar(200)
+  customerPhone          String?   @map("customer_phone") @db.VarChar(20)
+  companyName            String?   @map("company_name") @db.VarChar(200)
+  
+  // Request details
+  quantityRequired       Int?      @map("quantity_required")
+  lengthRequiredMeters   Int?      @map("length_required_meters")
+  projectDetails         String?   @map("project_details") @db.Text
+  deliveryLocation       String?   @map("delivery_location") @db.VarChar(300)
+  expectedDeliveryDate   DateTime? @map("expected_delivery_date") @db.Date
+  
+  // Additional specifications
+  additionalRequirements String?   @map("additional_requirements") @db.Text
+  
+  // Status tracking
+  status                 String    @default("pending") @db.VarChar(50)
+  adminNotes             String?   @map("admin_notes") @db.Text
+  respondedAt            DateTime? @map("responded_at")
+  
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  cable Cable @relation(fields: [cableId], references: [id])
+
+  @@index([cableId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("quote_requests")
+}
+
+// Enums for better type safety
+enum QuoteStatus {
+  PENDING
+  RESPONDED
+  CLOSED
+}
+
+enum DataType {
+  TEXT
+  NUMBER
+  BOOLEAN
+}
+
+enum SpecificationCategory {
+  ELECTRICAL
+  MECHANICAL
+  ENVIRONMENTAL
+  CONSTRUCTION
 }
