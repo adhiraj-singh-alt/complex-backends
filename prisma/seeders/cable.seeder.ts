@@ -1,83 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
-// Sample Electric Cable Data Examples
-// This file shows realistic data for electric cables using the Prisma schema
-
-// 1. SAMPLE LOOKUP DATA
-
-const sampleCategories = [
-  {
-    name: 'Power Cables',
-    description: 'High and low voltage power transmission cables',
-    displayOrder: 1,
-  },
-  {
-    name: 'Control Cables',
-    description: 'Multi-core cables for control and instrumentation',
-    displayOrder: 2,
-  },
-  {
-    name: 'Instrumentation Cables',
-    description: 'Shielded cables for signal transmission',
-    displayOrder: 3,
-  },
-  {
-    name: 'Special Purpose Cables',
-    description: 'Fire resistant and specialized application cables',
-    displayOrder: 4,
-  },
-];
-
-const sampleStandards = [
-  {
-    name: 'IS 1554',
-    fullName: 'IS 1554 - PVC Insulated Cables',
-    description: 'Indian Standard for PVC insulated cables up to 1100V',
-  },
-  {
-    name: 'IS 7098',
-    fullName: 'IS 7098 - XLPE Insulated Cables',
-    description: 'Indian Standard for XLPE insulated cables for voltages up to 33kV',
-  },
-  {
-    name: 'IEC 60502',
-    fullName: 'IEC 60502 - Power Cables with Extruded Insulation',
-    description: 'International standard for power cables with extruded insulation',
-  },
-  {
-    name: 'IS 13567',
-    fullName: 'IS 13567 - Polyethylene Insulated Jelly Filled Cables',
-    description: 'Indian Standard for PE insulated jelly filled telephone cables',
-  },
-];
-
-const sampleIndustries = [
-  {
-    name: 'Power Generation & Distribution',
-    description: 'Electrical utilities, substations, and power plants',
-  },
-  {
-    name: 'Oil & Gas',
-    description: 'Refineries, petrochemical plants, and offshore platforms',
-  },
-  {
-    name: 'Steel & Metal Industries',
-    description: 'Steel plants, aluminum smelters, and metal processing',
-  },
-  {
-    name: 'Infrastructure & Construction',
-    description: 'Buildings, bridges, tunnels, and urban infrastructure',
-  },
-  {
-    name: 'Manufacturing',
-    description: 'Industrial automation and manufacturing facilities',
-  },
-];
-
-// 2. SAMPLE CABLE EXAMPLES
-
 const sampleCables = [
   {
     // Example 1: High Voltage Power Cable
@@ -365,89 +287,62 @@ const sampleSpecificationTypes = [
   },
 ];
 
-const sampleCableSpecifications = [
-  // For 11kV XLPE Cable
+// Cable specifications mapped by cable index (0-based) to specification type name
+const cableSpecificationsData = [
+  // Cable 0: 11kV XLPE Cable
   {
-    cableId: 1,
-    specificationTypeId: 1, // Current Carrying Capacity
-    value: '340',
+    'Current Carrying Capacity': '340',
+    'Short Circuit Current': '8.5',
+    'Tensile Strength': '12.5',
+    'Flame Propagation Index': '0.5',
   },
+  // Cable 1: Control Cable
   {
-    cableId: 1,
-    specificationTypeId: 2, // Short Circuit Current
-    value: '8.5',
+    'Current Carrying Capacity': '25',
+    'Tensile Strength': '8.0',
+    'Flame Propagation Index': '1.2',
   },
+  // Cable 2: Instrumentation Cable
   {
-    cableId: 1,
-    specificationTypeId: 3, // Tensile Strength
-    value: '12.5',
+    'Current Carrying Capacity': '15',
+    'Tensile Strength': '6.5',
+    'Flame Propagation Index': '0.8',
+  },
+  // Cable 3: Fire Resistant Cable
+  {
+    'Current Carrying Capacity': '32',
+    'Tensile Strength': '15.0',
+    'Flame Propagation Index': '0.0',
   },
 ];
 
-// 4. SAMPLE QUOTE REQUEST
+export async function seedCables(prisma: PrismaClient): Promise<void> {
+  console.log('Seeding cables...');
 
-const sampleQuoteRequest = {
-  cableId: 1, // 11kV XLPE Cable
-  customerName: 'Rajesh Kumar',
-  customerEmail: 'rajesh@powertech.in',
-  customerPhone: '+91 98765 43210',
-  companyName: 'PowerTech Engineering Pvt Ltd',
-  quantityRequired: 5000, // meters
-  lengthRequiredMeters: 5000,
-  projectDetails:
-    'Underground power distribution for new industrial complex in Chennai. Required for 11kV feeder installation.',
-  deliveryLocation: 'Chennai, Tamil Nadu',
-  expectedDeliveryDate: new Date('2025-08-15'),
-  additionalRequirements:
-    'Need installation guidance and technical support. Cables should be tested as per IS 7098 standards.',
-  status: 'pending',
-};
+  // First, ensure specification types exist
+  console.log('Creating specification types...');
+  for (const specType of sampleSpecificationTypes) {
+    await prisma.specificationType.upsert({
+      where: { name: specType.name },
+      update: {},
+      create: specType,
+    });
+  }
 
-// 5. PRISMA SEED DATA EXAMPLE
+  // Create cables one by one to handle relations
+  for (let i = 0; i < sampleCables.length; i++) {
+    const cable = sampleCables[i];
+    const { standards, industries, applications, ...cableData } = cable;
 
-export const seedData = {
-  categories: sampleCategories,
-  standards: sampleStandards,
-  industries: sampleIndustries,
-  cables: sampleCables,
-  specificationTypes: sampleSpecificationTypes,
-  cableSpecifications: sampleCableSpecifications,
-  quoteRequest: sampleQuoteRequest,
-};
+    console.log(`Creating cable: ${cable.name}`);
 
-// 6. COMPLETE PRISMA SEED FUNCTION
+    // Create the cable
+    const createdCable = await prisma.cable.create({
+      data: cableData,
+    });
 
-async function seedDatabase() {
-  try {
-    // Create Categories
-    for (const category of sampleCategories) {
-      await prisma.cableCategory.create({ data: category });
-    }
-
-    // Create Standards
-    for (const standard of sampleStandards) {
-      await prisma.standard.create({ data: standard });
-    }
-
-    // Create Industries
-    for (const industry of sampleIndustries) {
-      await prisma.industry.create({ data: industry });
-    }
-
-    // Create Specification Types
-    for (const specType of sampleSpecificationTypes) {
-      await prisma.specificationType.create({ data: specType });
-    }
-
-    // Create Cables (without relations first)
-    for (const cable of sampleCables) {
-      const { standards, industries, applications, ...cableData } = cable;
-
-      const createdCable = await prisma.cable.create({
-        data: cableData,
-      });
-
-      // Create Cable-Standard relations
+    // Create Cable-Standard relations
+    if (standards && standards.length > 0) {
       for (const standardName of standards) {
         const standard = await prisma.standard.findUnique({
           where: { name: standardName },
@@ -461,8 +356,10 @@ async function seedDatabase() {
           });
         }
       }
+    }
 
-      // Create Cable-Industry relations
+    // Create Cable-Industry relations
+    if (industries && industries.length > 0) {
       for (const industryName of industries) {
         const industry = await prisma.industry.findUnique({
           where: { name: industryName },
@@ -476,8 +373,10 @@ async function seedDatabase() {
           });
         }
       }
+    }
 
-      // Create Applications
+    // Create Applications
+    if (applications && applications.length > 0) {
       for (const application of applications) {
         await prisma.cableApplication.create({
           data: {
@@ -489,19 +388,26 @@ async function seedDatabase() {
     }
 
     // Create Cable Specifications
-    for (const spec of sampleCableSpecifications) {
-      await prisma.cableSpecification.create({ data: spec });
+    const cableSpecs = cableSpecificationsData[i];
+    if (cableSpecs) {
+      for (const [specTypeName, value] of Object.entries(cableSpecs) as [string, string][]) {
+        const specType = await prisma.specificationType.findUnique({
+          where: { name: specTypeName },
+        });
+        if (specType) {
+          await prisma.cableSpecification.create({
+            data: {
+              cableId: createdCable.id,
+              specificationTypeId: specType.id,
+              value: value,
+            },
+          });
+        }
+      }
     }
 
-    // Create Sample Quote Request
-    await prisma.quoteRequest.create({ data: sampleQuoteRequest });
-
-    console.log('Database seeded successfully!');
-  } catch (error) {
-    console.error('Error seeding database:', error);
-  } finally {
-    await prisma.$disconnect();
+    console.log(`✓ Created cable: ${cable.name} with specifications`);
   }
-}
 
-// Usage: npx prisma db seed
+  console.log('Cables and specifications seeded successfully.');
+}
