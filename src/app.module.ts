@@ -8,6 +8,7 @@ import { PrismaModule, providePrismaClientExceptionFilter } from 'nestjs-prisma'
 import { MulterModule } from '@nestjs/platform-express';
 import { APP_FILTER } from '@nestjs/core';
 import { ExceptionsLoggerFilter } from './common/utils/exceptionsLogger.filter';
+import { QuoteRequestModule } from './modules/quote-request/quote-request.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ExceptionsLoggerFilter } from './common/utils/exceptionsLogger.filter';
     }),
     CablesModule,
     CategoriesModule,
+    QuoteRequestModule,
   ],
   controllers: [],
   providers: [
